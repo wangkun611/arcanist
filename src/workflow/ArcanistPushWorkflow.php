@@ -14,6 +14,7 @@ final class ArcanistPushWorkflow extends ArcanistWorkflow {
   private $branch;
   private $remote;
   private $remoteBranch;
+  private $baseBranch;
   private $useSquash;
   private $keepBranch;
   private $shouldUpdateWithRebase;
@@ -83,6 +84,11 @@ EOTEXT
         'param' => 'origin',
         'help' => pht(
           "Push to a remote other than the default ('origin' in git)."),
+      ),
+      'from' => array(
+        'help' => pht(
+          "__branch__ created from. ".
+          "arc.push.branch.from is default.")
       ),
       'update-with-rebase' => array(
         'help' => pht(
@@ -209,9 +215,8 @@ EOTEXT
     }
     $this->branch = head($branch);
 
-    $update_strategy = $this->getConfigFromAnySource(
-      'arc.push.update.default',
-      'merge');
+    $update_strategy = nonempty(
+      $this->getConfigFromAnySource('arc.push.update.default'), 'rebase');
     $this->shouldUpdateWithRebase = $update_strategy == 'rebase';
     if ($this->getArgument('update-with-rebase')) {
       $this->shouldUpdateWithRebase = true;
@@ -235,6 +240,14 @@ EOTEXT
     $this->remoteBranch = coalesce(
       $this->getUpstreamMatching($this->branch, '/^refs\/remotes\/.+?\/(.+)/'),
       "");
+
+    if($this->remoteBranch) {
+      $this->baseBranch = $this->remote.'/'.$this->remoteBranch;
+    } else {
+      $this->baseBranch = $this->remote.'/'.nonempty($this->getArgument('from'), 
+                    $this->getConfigFromAnySource('arc.push.branch.from'),
+                    'HEAD');
+    }
     $this->oldBranch = $this->getBranchOrBookmark();
   }
 
@@ -259,14 +272,10 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
 
     if ($repository_api instanceof ArcanistGitAPI) {
-      $baseCommit = $this->remote;
-      if($this->remoteBranch) {
-        $baseCommit = $this->remote.'/'.$this->remoteBranch;
-      }
       list($out) = $repository_api->execxLocal(
         'log --oneline %s %s --',
         $this->branch,
-        '^'.$baseCommit);
+        '^'.$this->baseBranch);
     }
 
     if (!trim($out)) {
@@ -281,7 +290,7 @@ EOTEXT
   private function findRevision() {
     $repository_api = $this->getRepositoryAPI();
 
-    $this->parseBaseCommitArgument(array($this->remote));
+    $this->parseBaseCommitArgument(array($this->baseBranch));
 
     $revision_id = $this->getArgument('revision');
     if ($revision_id) {

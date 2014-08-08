@@ -511,13 +511,13 @@ EOTEXT
 
     if ($this->getArgument('nolint')) {
       $this->excuses['lint'] = $this->getSkipExcuse(
-        'Provide explanation for skipping lint or press Enter to abort:',
+        'Provide_explanation_for_skipping_lint_or_press_Enter_to_abort:',
         'lint-excuses');
     }
 
     if ($this->getArgument('nounit')) {
       $this->excuses['unit'] = $this->getSkipExcuse(
-        'Provide explanation for skipping unit tests or press Enter to abort:',
+        'Provide_explanation_for_skipping_unit_tests_or_press_Enter_to_abort:',
         'unit-excuses');
     }
 
