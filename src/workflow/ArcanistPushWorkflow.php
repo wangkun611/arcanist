@@ -465,7 +465,6 @@ EOTEXT
       $err = phutil_passthru('git svn dcommit');
       $cmd = 'git svn dcommit';
     } else if ($this->isGit) {
-      echo $this->remote.$this->branch; die;
       $err = phutil_passthru(
         'git push %s %s',
         $this->remote,
